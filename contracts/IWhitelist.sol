@@ -5,5 +5,5 @@ pragma solidity ^0.8.4;
 //as this will use more gas which we dont want
 
 interface IWhitelist {
-    function whitelistedAddresses(address) external view returns (bool);
+    function whitelistedAddress(address) external view returns (bool);
 }

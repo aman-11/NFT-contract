@@ -5,13 +5,14 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 // import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IWhitelist.sol";
 
-contract CryptoDevs is ERC721Enumerable, Ownable {
+contract CryptoDevs is ERC721Enumerable {
     //address of owner of this contract
     address public owner;
 
     string _baseTokenURI;
 
     enum State {
+        beforeStarted,
         preSaleStarted,
         resume,
         paused,
@@ -20,7 +21,8 @@ contract CryptoDevs is ERC721Enumerable, Ownable {
     State public NFTstate;
 
     //set the price of the NFT
-    uint256 public NFTprice = 0.1 ether;
+    uint256 public NFTpresalePrice = 0.02 ether;
+    uint256 public NFTprice = 0.04 ether;
 
     //max no of NFT allowed  --> property of NFT --> Scarcity i.e limited
     uint256 public maxTokenId = 20; //tokenID is used to identify the uniqueness in each NFT
@@ -48,12 +50,13 @@ contract CryptoDevs is ERC721Enumerable, Ownable {
         _;
     }
 
-    constructor(string memory _baseURI, address _whitelistContract)
+    constructor(string memory baseURI, address _whitelistContract)
         ERC721("Useless Nfts", "USENFT")
     {
         //initialize whitelist  owner, contarct and baseURI
+        NFTstate = State.beforeStarted;
         owner = msg.sender;
-        _baseTokenURI = _baseURI;
+        _baseTokenURI = baseURI;
         whitelist = IWhitelist(_whitelistContract);
     }
 
@@ -82,17 +85,21 @@ contract CryptoDevs is ERC721Enumerable, Ownable {
         require(NFTstate == State.preSaleStarted, "Sale has not been started");
         require(block.timestamp < preSaleEnded, "Sorry, Sales ended");
         require(
+            whitelist.whitelistedAddress(msg.sender),
+            "You are not whitelisted"
+        );
+        require(
             tokenIds < maxTokenId,
             "We have reached the maximum token supply."
         );
-        require(msg.value >= NFTprice, "Please send the corect amount");
+        require(msg.value >= NFTpresalePrice, "Please send the corect amount");
 
         //_safeMint(address to, uint256 tokenId)
         //_safeMint is a safer version of the _mint function as it ensures that
         // if the address being minted to is a contract, then it knows how to deal with ERC721 tokens
         // If the address being minted to is not a contract, it works the same way as _mint
-        _safeMint(msg.sender, tokenIds);
         tokenIds += 1;
+        _safeMint(msg.sender, tokenIds);
     }
 
     //mint(),after the preSale ended
@@ -105,8 +112,8 @@ contract CryptoDevs is ERC721Enumerable, Ownable {
         );
         require(msg.value >= NFTprice, "Please send the corect amount");
 
-        _safeMint(msg.sender, tokenIds);
         tokenIds += 1;
+        _safeMint(msg.sender, tokenIds);
     }
 
     //tokenURI is need in order to make nft valuable
@@ -120,7 +127,7 @@ contract CryptoDevs is ERC721Enumerable, Ownable {
     //withdraw ether from this contract by owner it can be another address
     function withdraw(address _ownerWithdrawAddress) public onlyOwner {
         uint256 _amount = address(this).balance;
-        bool(success, "") = _ownerWithdrawAddress.call{value: _amount}("");
+        (bool success, ) = _ownerWithdrawAddress.call{value: _amount}("");
         require(success, "Transfer of ether failed");
     }
 
