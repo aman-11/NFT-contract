@@ -100,6 +100,7 @@ contract CryptoDevs is ERC721Enumerable {
         // If the address being minted to is not a contract, it works the same way as _mint
         tokenIds += 1;
         _safeMint(msg.sender, tokenIds);
+        tokenURI(tokenIds);
     }
 
     //mint(),after the preSale ended
